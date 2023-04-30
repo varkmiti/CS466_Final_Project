@@ -1,7 +1,3 @@
-// =================== CS251 DEX Project =================== // 
-//        @authors: Simon Tao '22, Mathew Hogan '22          //
-// ========================================================= //                  
-
 // Set up Ethers.js
 const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
 var defaultAccount;
