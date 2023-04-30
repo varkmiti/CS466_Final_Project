@@ -74,32 +74,68 @@ async function getPoolState() {
 // Note: maxSlippagePct will be passed in as an int out of 100. 
 // Be sure to divide by 100 for your calculations.
 
+async function minMaxRate() {
+  const poolState = await getPoolState();
+  const token_eth_rate = poolState.token_eth_rate;
+  let minRate = token_eth_rate * (1 - maxSlippagePct / 100);
+  let maxRate = token_eth_rate * (1 + maxSlippagePct / 100);
+  return [minRate, maxRate];
+}
+
 /*** ADD LIQUIDITY ***/
 async function addLiquidity(amountEth, maxSlippagePct) {
-    /** TODO: ADD YOUR CODE HERE **/
-   
+  data = await minMaxRate();
+  min_rate = data[0];
+  max_rate = data[1];
+  let amountToken = max * amountEth;
+  await token_contract.methods.approve(exchange_address, parseInt(amountToken)).send({from: web3.eth.defaultAccount});
+
+  return exchange_contract.methods.addLiquidity(
+	                            parseInt(min_rate * EXCHANGE_PERCISION_MULTIPLIER),
+                              parseInt(max_rate * EXCHANGE_PERCISION_MULTIPLIER))
+                              .send({value: amountEth, from: web3.eth.defaultAccount, gas: 999999});
 }
 
 /*** REMOVE LIQUIDITY ***/
 async function removeLiquidity(amountEth, maxSlippagePct) {
-    /** TODO: ADD YOUR CODE HERE **/
-    
+  data = await minMaxRate();
+  min_rate = data[0];
+  max_rate = data[1];
+  return exchange_contract.methods.removeLiquidity(
+	                                parseInt(amountEth),
+	                                parseInt(min_rate * EXCHANGE_PERCISION_MULTIPLIER),
+	                                parseInt(max_rate * EXCHANGE_PERCISION_MULTIPLIER))
+	                                    .send({from: web3.eth.defaultAccount, gas: 999999});
 }
 
 async function removeAllLiquidity(maxSlippagePct) {
-    /** TODO: ADD YOUR CODE HERE **/
-   
+  data = await minMaxRate();
+  min_rate = data[0];
+  max_rate = data[1];
+  const poolState = await getPoolState();
+  let amountEth = poolState.eth_liquidity;
+  return exchange_contract.methods.removeLiquidity(
+                                  parseInt(amountEth),
+                                  parseInt(min_rate * EXCHANGE_PERCISION_MULTIPLIER),
+                                  parseInt(max_rate * EXCHANGE_PERCISION_MULTIPLIER))
+                                      .send({from: web3.eth.defaultAccount, gas: 999999});
 }
 
 /*** SWAP ***/
 async function swapTokensForETH(amountToken, maxSlippagePct) {
-    /** TODO: ADD YOUR CODE HERE **/
-   
+  data = await minMaxRate();
+  max_rate = data[1];
+  return exchange_contract.methods.tokenToEthSwapInput(
+                                  parseInt(max_rate * EXCHANGE_PERCISION_MULTIPLIER)
+                                      .send({from: web3.eth.defaultAccount, gas: 999999}));
 }
 
 async function swapETHForTokens(amountEth, maxSlippagePct) {
-    /** TODO: ADD YOUR CODE HERE **/
-   
+   data = await minMaxRate();
+    max_rate = data[1];
+    return exchange_contract.methods.ethToTokenSwapInput(
+                                    parseInt(max_rate * EXCHANGE_PERCISION_MULTIPLIER)
+                                        .send({from: web3.eth.defaultAccount, gas: 999999, value: amountEth}));
 }
 
 // =============================================================================
